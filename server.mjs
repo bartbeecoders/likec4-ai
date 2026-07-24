@@ -2,6 +2,7 @@
    Usage: node server.mjs [port] */
 import { createServer } from 'node:http'
 import { readFile } from 'node:fs/promises'
+import { networkInterfaces } from 'node:os'
 import { extname, join, normalize, resolve } from 'node:path'
 
 const ROOT = resolve(import.meta.dirname)
@@ -38,5 +39,13 @@ createServer(async (req, res) => {
     res.writeHead(404, { 'Content-Type': 'text/plain' }).end('Not found')
   }
 }).listen(PORT, () => {
-  console.log(`GALAGA running at http://localhost:${PORT}`)
+  console.log(`\n  GALAGA\n`)
+  console.log(`  local    http://localhost:${PORT}`)
+  // Print LAN addresses so you can open the game on a phone on the same Wi-Fi.
+  for (const addrs of Object.values(networkInterfaces())) {
+    for (const a of addrs || []) {
+      if (a.family === 'IPv4' && !a.internal) console.log(`  network  http://${a.address}:${PORT}`)
+    }
+  }
+  console.log('')
 })

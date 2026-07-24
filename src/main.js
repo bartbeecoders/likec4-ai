@@ -90,26 +90,63 @@
     input.left = input.right = input.fire = false
   })
 
-  /* Touch: three zones along the bottom of the screen. */
+  /* Touch: three zones along the bottom of the screen.
+
+     Zones are hit-tested by coordinate rather than bound to each element, so a
+     finger can slide from one control straight into another. Per-element
+     handlers can't do that on touch: the first pointerdown implicitly captures
+     the pointer, and every later event keeps going to the original element. */
   const touch = document.getElementById('touch')
   if (touch) {
-    for (const zone of touch.querySelectorAll('div')) {
-      const action = zone.dataset.key
-      const press = e => {
-        e.preventDefault()
-        G.Sfx.resume()
-        if (game.state === 'attract' && action === 'fire') input.startPressed = true
-        setKey(action, true)
+    const zones = Array.prototype.slice.call(touch.querySelectorAll('div'))
+    const active = new Map() // pointerId -> action
+
+    const zoneAt = (x, y) => {
+      for (const z of zones) {
+        const r = z.getBoundingClientRect()
+        if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) return z
       }
-      const release = e => {
-        e.preventDefault()
-        setKey(action, false)
-      }
-      zone.addEventListener('pointerdown', press)
-      zone.addEventListener('pointerup', release)
-      zone.addEventListener('pointercancel', release)
-      zone.addEventListener('pointerleave', release)
+      return null
     }
+
+    const apply = () => {
+      const actions = new Set(active.values())
+      input.left = actions.has('left')
+      input.right = actions.has('right')
+      const fire = actions.has('fire')
+      if (fire && !input.fire) input.firePressed = true
+      input.fire = fire
+      for (const z of zones) z.classList.toggle('on', actions.has(z.dataset.key))
+    }
+
+    const track = e => {
+      e.preventDefault()
+      G.Sfx.resume()
+      const z = zoneAt(e.clientX, e.clientY)
+      if (z) active.set(e.pointerId, z.dataset.key)
+      else active.delete(e.pointerId)
+      apply()
+    }
+
+    const drop = e => {
+      active.delete(e.pointerId)
+      apply()
+    }
+
+    touch.addEventListener('pointerdown', e => {
+      // Release implicit capture so a drag can cross into a neighbouring zone.
+      if (touch.hasPointerCapture && touch.hasPointerCapture(e.pointerId)) {
+        touch.releasePointerCapture(e.pointerId)
+      }
+      track(e)
+    })
+    touch.addEventListener('pointermove', e => {
+      if (active.size === 0 && e.pressure === 0) return
+      track(e)
+    })
+    touch.addEventListener('pointerup', drop)
+    touch.addEventListener('pointercancel', drop)
+    touch.addEventListener('contextmenu', e => e.preventDefault())
   }
 
   /* --- Presentation ------------------------------------------------------ */
@@ -120,21 +157,34 @@
     else if (el.requestFullscreen) el.requestFullscreen()
   }
 
-  /** Scale the canvas by the largest whole number that still fits. */
+  /** Fit the canvas to the space actually available.
+
+      Whole-number scaling keeps pixels perfectly square, but on a phone the
+      largest integer that fits is usually 1, which wastes most of the screen.
+      So we snap to an integer only when there's room for 2x or more, and fall
+      back to a fractional fit on small displays. `image-rendering: pixelated`
+      keeps it nearest-neighbour either way. */
   function resize () {
-    const pad = global.matchMedia('(pointer: coarse)').matches ? 0.72 : 0.92
-    const scale = Math.max(
-      1,
-      Math.min(
-        Math.floor((global.innerWidth * 0.96) / G.W),
-        Math.floor((global.innerHeight * pad) / G.H)
-      )
-    )
-    canvas.style.width = G.W * scale + 'px'
-    canvas.style.height = G.H * scale + 'px'
+    const coarse = global.matchMedia('(pointer: coarse)').matches
+    // Space taken by the on-screen controls, or by the keyboard hint line.
+    const reserved = coarse && touch ? touch.getBoundingClientRect().height : 52
+    const vv = global.visualViewport
+    const vw = vv ? vv.width : global.innerWidth
+    const vh = vv ? vv.height : global.innerHeight
+
+    const availW = vw - 8
+    const availH = vh - reserved - 12
+    const fit = Math.min(availW / G.W, availH / G.H)
+    const scale = fit >= 2 ? Math.floor(fit) : Math.max(0.4, fit)
+
+    canvas.style.width = Math.round(G.W * scale) + 'px'
+    canvas.style.height = Math.round(G.H * scale) + 'px'
   }
 
   global.addEventListener('resize', resize)
+  global.addEventListener('orientationchange', () => setTimeout(resize, 120))
+  // iOS resizes the visual viewport when the URL bar slides away.
+  if (global.visualViewport) global.visualViewport.addEventListener('resize', resize)
   resize()
 
   /* --- Loop -------------------------------------------------------------- */

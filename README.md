@@ -40,8 +40,35 @@ npm start          # tiny zero-dependency static server on :8080
 | `M` | Mute |
 | `F` | Fullscreen |
 
-On phones and tablets, three touch zones appear along the bottom of the
-screen: left, fire, right.
+## On a phone
+
+Touch controls appear automatically on any device with a coarse pointer:
+three buttons below the playfield — left, fire, right. You can slide a finger
+between them without lifting, and the playfield scales to fill the screen
+(portrait is the intended orientation; it's a vertical arcade game).
+
+To play on an iPhone or iPad, the game needs to be served over HTTP — iOS
+can't open a multi-file site from the Files app. Two ways:
+
+**Over your Wi-Fi.** Run the server on your computer and open the printed
+network address on the phone:
+
+```sh
+$ npm start
+
+  GALAGA
+
+  local    http://localhost:8080
+  network  http://192.168.1.24:8080     ← open this on the phone
+```
+
+**Over the internet.** Any static host works, since there's nothing to build
+— push the folder to GitHub Pages, Netlify, Vercel, or similar and open the
+URL.
+
+Either way, tap **Share → Add to Home Screen** to get a fullscreen icon with
+no Safari chrome. Tap the fire button once to start, which also unlocks audio
+(iOS won't play sound until you touch the page).
 
 ## What's in it
 
