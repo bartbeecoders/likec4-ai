@@ -34,9 +34,9 @@ jobs:
         with:
           node-version: 22
 
-      # Produces dist/galaga.html, published as /galaga.html.
-      - name: Build the single-file bundle
-        run: node build.mjs
+      # Produces galaga/dist/galaga.html, published as /galaga/dist/galaga.html.
+      - name: Build the single-file bundles
+        run: npm run build
 
       - name: Verify the sources parse
         run: npm run check
