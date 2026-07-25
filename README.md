@@ -62,9 +62,15 @@ $ npm start
   network  http://192.168.1.24:8080     ← open this on the phone
 ```
 
-**Over the internet.** Any static host works, since there's nothing to build
-— push the folder to GitHub Pages, Netlify, Vercel, or similar and open the
-URL.
+**Over the internet.** See [Deploying](#deploying) — any static host works.
+
+**With no host at all.** Build the single-file bundle and AirDrop it to the
+phone; a self-contained HTML file opens fine from the iOS Files app, and works
+offline.
+
+```sh
+npm run build      # -> dist/galaga.html
+```
 
 Either way, tap **Share → Add to Home Screen** to get a fullscreen icon with
 no Safari chrome. Tap the fire button once to start, which also unlocks audio
@@ -97,10 +103,36 @@ Every asset is generated at runtime: sprites are baked from character grids,
 the 5×7 font is a bitmap table, and all sound is synthesised with WebAudio.
 There are no image or audio files anywhere in the repository.
 
+## Deploying
+
+There is nothing to compile and no server-side anything, so the repository
+root *is* the site. Any static host will do.
+
+**Single file.** `npm run build` inlines every script into `dist/galaga.html`
+— one ~72 kB file with no external references at all. Drag it onto
+[Netlify Drop](https://app.netlify.com/drop) for a public URL in seconds, or
+just open it from disk. This is also the easiest way onto a phone.
+
+**GitHub Pages.** `.github/workflows/deploy.yml` is ready to go: set
+*Settings → Pages → Source* to **GitHub Actions**, then push to `main`. It
+publishes the site plus the bundle at `/galaga.html`. If you'd rather not use
+Actions, *Deploy from a branch* pointed at the repository root works too — the
+site needs no build step.
+
+**Cloudflare Pages / Vercel / Surge.** All one command, no configuration:
+
+```sh
+npx wrangler pages deploy . --project-name galaga
+npx vercel deploy --prod
+npx surge .
+```
+
 ## Layout
 
 ```
 index.html          markup, styling, script order
+build.mjs           inlines everything into dist/galaga.html
+server.mjs          zero-dependency static server for local play
 src/util.js         constants and math helpers
 src/audio.js        WebAudio sound effects
 src/sprites.js      pixel-art sprites baked to offscreen canvases

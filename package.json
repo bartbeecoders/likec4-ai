@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "start": "node server.mjs",
+    "build": "node build.mjs",
     "check": "node --check src/util.js && node --check src/audio.js && node --check src/sprites.js && node --check src/stars.js && node --check src/paths.js && node --check src/entities.js && node --check src/stages.js && node --check src/hud.js && node --check src/game.js && node --check src/main.js"
   },
   "keywords": ["galaga", "arcade", "canvas", "game", "shmup", "javascript"],
